@@ -335,6 +335,26 @@ lval *builtin_eval(lval *a) {
   return lval_eval(x);
 }
 
+lval *builtin_len(lval *a) {
+  LASSERT(a, a->count == 1, "Function 'len' passed too many arguments!");
+  LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
+          "Function 'eval' passed incorrect type!");
+  return lval_num(a->cell[0]->count);
+}
+
+// TODO: builtin_cons
+
+lval *builtin_init(lval *a) {
+  LASSERT(a, a->count == 1, "Function 'init' passed too many arguments!");
+  LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
+          "Function 'init' passed incorrect type!");
+  LASSERT(a, a->cell[0]->count != 0, "Function 'init' passed {}!");
+
+  lval *v = lval_take(a, 0);
+  lval_del(lval_pop(v, v->count - 1));
+  return v;
+}
+
 lval *lval_join(lval *, lval *);
 
 lval *builtin_join(lval *a) {
@@ -375,6 +395,12 @@ lval *builtin(lval *a, char *func) {
   if (strcmp("eval", func) == 0) {
     return builtin_eval(a);
   }
+  if (strcmp("len", func) == 0) {
+    return builtin_len(a);
+  }
+  if (strcmp("init", func) == 0) {
+    return builtin_init(a);
+  }
   if (strstr("+-/*", func)) {
     return builtin_op(a, func);
   }
@@ -392,7 +418,7 @@ int main(int argc, char *argv[]) {
   mpc_parser_t *Lispy = mpc_new("lispy");
   mpca_lang(MPCA_LANG_DEFAULT, "                       \
     number : /-?[0-9]+/ ;                              \
-    symbol : '+' | '-' | '*' | '/' | \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\";                   \
+    symbol : '+' | '-' | '*' | '/' | \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" | \"len\" | \"init\";                   \
     sexpr  : '(' <expr>* ')' ;                         \
     qexpr  : '{' <expr>* '}' ;                         \
     expr   : <number> | <symbol> | <sexpr> | <qexpr> ; \
