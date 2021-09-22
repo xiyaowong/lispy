@@ -342,7 +342,22 @@ lval *builtin_len(lval *a) {
   return lval_num(a->cell[0]->count);
 }
 
-// TODO: builtin_cons
+lval *builtin_cons(lval *a) {
+  LASSERT(a, a->count == 2, "Function 'cons' passed wrong arguments!");
+  LASSERT(a, a->cell[0]->type == LVAL_NUM,
+          "Function 'cons', the first argument should be a number!");
+  LASSERT(a, a->cell[1]->type, "Function 'cons' passed incorrect type!");
+
+  lval *num = lval_pop(a, 0);
+  lval *v = lval_take(a, 0);
+  v->cell = realloc(v->cell, sizeof(lval *) * (v->count + 1));
+  for (int i = v->count; i > 0; i--) {
+    v->cell[i] = v->cell[i - 1];
+  }
+  v->cell[0] = num;
+  v->count++;
+  return v;
+}
 
 lval *builtin_init(lval *a) {
   LASSERT(a, a->count == 1, "Function 'init' passed too many arguments!");
@@ -401,6 +416,9 @@ lval *builtin(lval *a, char *func) {
   if (strcmp("init", func) == 0) {
     return builtin_init(a);
   }
+  if (strcmp("cons", func) == 0) {
+    return builtin_cons(a);
+  }
   if (strstr("+-/*", func)) {
     return builtin_op(a, func);
   }
@@ -418,7 +436,7 @@ int main(int argc, char *argv[]) {
   mpc_parser_t *Lispy = mpc_new("lispy");
   mpca_lang(MPCA_LANG_DEFAULT, "                       \
     number : /-?[0-9]+/ ;                              \
-    symbol : '+' | '-' | '*' | '/' | \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" | \"len\" | \"init\";                   \
+    symbol : '+' | '-' | '*' | '/' | \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" | \"len\" | \"init\" | \"cons\";                   \
     sexpr  : '(' <expr>* ')' ;                         \
     qexpr  : '{' <expr>* '}' ;                         \
     expr   : <number> | <symbol> | <sexpr> | <qexpr> ; \
